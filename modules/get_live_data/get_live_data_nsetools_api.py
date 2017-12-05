@@ -3,27 +3,32 @@ from pprint import pprint
 import json
 import pymongo
 import threading
-import datetime
-name = raw_input('Enter Stock Symbol : ')
+from datetime import datetime, time
+import itertools
 
-def stock_data_thread():
-    threading.Timer(5.0,stock_data_thread).start()
+def stock_data_thread(stock):
     nse = Nse()
-    data = nse.get_quote(name)
-#     pprint(data)
-#     print data['lastPrice']
-    symbol = data['symbol']
-    current_date_time = datetime.datetime.now()
-    data['m_recorded_date_time']= current_date_time
-    
-    ### Mongo conneciton ###
-    
+    data = nse.get_quote(stock)
+    symbol = data['symbol']    
     client = pymongo.MongoClient('localhost',27017)
-    db = client['Mohit_mongo']
+    db = client['rm_analysis']
     collection = db[symbol]
-    try:
-        collection.insert(data)
-    except:
-        print "Document already exists"
+    for i in itertools.count():
+        now = datetime.now()
+        now_time = now.time()
+        print now_time
+        if now_time >= time(9,30) and now_time <= time(15,30):
+            nse = Nse()
+            data = nse.get_quote(stock)
+            current_date_time = datetime.now()
+            data['m_recorded_date_time']= current_date_time
+            try:
+                collection.insert(data)
+                print "Data Entered In DB"
+            except:
+                print "Document already exists"
+        else:
+            print "Terminal Closed"
 
-stock_data_thread()
+
+stock_data_thread('infy')
